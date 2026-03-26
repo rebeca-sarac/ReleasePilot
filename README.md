@@ -241,7 +241,7 @@ Returns `204 No Content`. Only valid from `Requested`. Approved or in-progress p
 
 **Why PostgreSQL over SQL Server**
 
-PostgreSQL is open source, free, and runs cleanly in Docker on all platforms, the natural choice for a .NET project not tied to the Microsoft ecosystem. SQL Server would have been equally valid but adds licensing overhead and is less common in modern cloud-native stacks.
+PostgreSQL is open source, free, and runs cleanly in Docker on all platforms, the natural choice for a .NET project not tied to the Microsoft ecosystem. SQL Server would have been equally valid, the decision reflects familiarity and ecosystem fit rather than a technical constraint.
 
 As a side benefit, PostgreSQL's native `text[]` array type mapped cleanly to `IReadOnlyList<string>` via EF Core's `PrimitiveCollection`, making `IssueReferences` a first-class column without a join table.
 
