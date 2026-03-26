@@ -1,0 +1,72 @@
+## .NET / MSBuild
+bin/
+obj/
+*.binlog
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio
+.vs/
+*.rsuser
+*.vsp
+*.vspx
+*.sap
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/packages/
+packages/
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+[Xx]86/
+[Xx]64/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## MSBuild
+preprocessed.xml
+*.binlog
+
+## Test results
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+## User-specific files
+*.rsuser
+*.user
+*.userosscache
+*.sln.docstates
+
+## Secrets / environment
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+*.env
+.env
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.claude/

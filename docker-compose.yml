@@ -1,0 +1,46 @@
+# Start infrastructure services with: docker compose up -d
+# Then run the API and Worker separately:
+#   dotnet run --project src/ReleasePilot.Api
+#   dotnet run --project src/ReleasePilot.Worker
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: releasepilot-postgres
+    environment:
+      POSTGRES_DB:       releasepilot
+      POSTGRES_USER:     releasepilot
+      POSTGRES_PASSWORD: ReleasePilot_Pass1
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U releasepilot -d releasepilot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: releasepilot-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: releasepilot
+      RABBITMQ_DEFAULT_PASS: ReleasePilot_Pass1
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  rabbitmq_data:

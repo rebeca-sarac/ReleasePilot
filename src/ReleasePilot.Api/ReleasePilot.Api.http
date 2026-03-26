@@ -1,0 +1,217 @@
+@ReleasePilot.Api_HostAddress = http://localhost:5127
+@approverToken = paste-approver-token-here
+@developerToken = paste-developer-token-here
+@devPromotionId = paste-dev-promotion-id-here
+@stagingPromotionId = paste-staging-promotion-id-here
+@productionPromotionId = paste-production-promotion-id-here
+@roleTestPromotionId = paste-promotion-id-here
+@conflictPromotionId = paste-promotion-id-here
+@conflictingPromotionId = paste-promotion-id-here
+
+###
+
+### 1. Get approver token
+POST {{ReleasePilot.Api_HostAddress}}/auth/token
+Content-Type: application/json
+
+{
+  "username": "approver"
+}
+
+###
+
+### 2. Get developer token
+POST {{ReleasePilot.Api_HostAddress}}/auth/token
+Content-Type: application/json
+
+{
+  "username": "developer"
+}
+
+###
+
+### 3. Request dev promotion - no sourceEnvironment, dev is the first environment
+POST {{ReleasePilot.Api_HostAddress}}/api/promotions
+Content-Type: application/json
+Authorization: Bearer {{developerToken}}
+
+{
+  "applicationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "version": "1.2.3",
+  "targetEnvironment": "dev",
+  "issueReferences": ["PROJ-101", "PROJ-102", "PROJ-103"]
+}
+
+###
+
+### 4. Approve dev promotion - paste id from request 3 into @devPromotionId
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{devPromotionId}}/approve
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 5. Start dev deployment - transitions Approved to InProgress
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{devPromotionId}}/start
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 6. Complete dev promotion - transitions InProgress to Completed, unlocks staging
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{devPromotionId}}/complete
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 7. Request staging promotion - sourceEnvironment dev satisfies the predecessor check
+POST {{ReleasePilot.Api_HostAddress}}/api/promotions
+Content-Type: application/json
+Authorization: Bearer {{developerToken}}
+
+{
+  "applicationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "version": "1.2.3",
+  "sourceEnvironment": "dev",
+  "targetEnvironment": "staging",
+  "issueReferences": ["PROJ-101", "PROJ-102", "PROJ-103"]
+}
+
+###
+
+### 8. Approve staging promotion - paste id from request 7 into @stagingPromotionId
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{stagingPromotionId}}/approve
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 9. Start staging deployment - transitions Approved to InProgress
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{stagingPromotionId}}/start
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 10. Complete staging promotion - transitions InProgress to Completed
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{stagingPromotionId}}/complete
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 11. Request production promotion - staging must be completed first
+POST {{ReleasePilot.Api_HostAddress}}/api/promotions
+Content-Type: application/json
+Authorization: Bearer {{developerToken}}
+
+{
+  "applicationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "version": "1.2.3",
+  "sourceEnvironment": "staging",
+  "targetEnvironment": "production",
+  "issueReferences": ["PROJ-101", "PROJ-102", "PROJ-103"]
+}
+
+###
+
+### 12. Approve production promotion
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{productionPromotionId}}/approve
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 13. Start production deployment
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{productionPromotionId}}/start
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 14. Complete production promotion
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{productionPromotionId}}/complete
+Authorization: Bearer {{approverToken}}
+
+### 15. Get promotion by id - returns PromotionDetailDto with full state history
+GET {{ReleasePilot.Api_HostAddress}}/api/promotions/{{stagingPromotionId}}
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 16. Get environment status - returns current state per environment for the application
+GET {{ReleasePilot.Api_HostAddress}}/api/promotions/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/environment-status
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 17. List promotions by application - paged, returns PromotionSummaryDto list
+GET {{ReleasePilot.Api_HostAddress}}/api/promotions?applicationId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa&page=1&pageSize=20
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 18. Request promotion for role enforcement test - paste id into @roleTestPromotionId
+POST {{ReleasePilot.Api_HostAddress}}/api/promotions
+Content-Type: application/json
+Authorization: Bearer {{developerToken}}
+
+{
+  "applicationId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "version": "2.0.0",
+  "targetEnvironment": "dev"
+}
+
+###
+
+### 18b. Approve with developer token - expect 401 Unauthorized (domain role check)
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{roleTestPromotionId}}/approve
+Authorization: Bearer {{developerToken}}
+
+###
+
+### 19. Cancel completed promotion - expect 409 Conflict (invalid state transition)
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{stagingPromotionId}}/cancel
+Content-Type: application/json
+Authorization: Bearer {{approverToken}}
+
+{
+  "reason": "Trying to cancel a completed promotion"
+}
+
+###
+
+### 20a. Request promotion for conflict test - paste id into @conflictPromotionId
+POST {{ReleasePilot.Api_HostAddress}}/api/promotions
+Content-Type: application/json
+Authorization: Bearer {{developerToken}}
+
+{
+  "applicationId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "version": "3.0.0",
+  "targetEnvironment": "dev"
+}
+
+###
+
+### 20b. Approve conflict promotion - moves to Approved
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{conflictPromotionId}}/approve
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 20c. Start conflict promotion - moves to InProgress, slot is now occupied
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{conflictPromotionId}}/start
+Authorization: Bearer {{approverToken}}
+
+###
+
+### 20d. Request second promotion for same app - paste id into @conflictingPromotionId
+POST {{ReleasePilot.Api_HostAddress}}/api/promotions
+Content-Type: application/json
+Authorization: Bearer {{developerToken}}
+
+{
+  "applicationId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "version": "3.0.1",
+  "targetEnvironment": "dev"
+}
+
+###
+
+### 20e. Approve while first is InProgress - expect 409 Conflict (slot occupied)
+PUT {{ReleasePilot.Api_HostAddress}}/api/promotions/{{conflictingPromotionId}}/approve
+Authorization: Bearer {{approverToken}}
