@@ -30,9 +30,6 @@ public class ApprovePromotionCommandHandlerTests
         // Arrange
         var promotion = PromotionFactory.Requested();
         _repository.GetByIdAsync(promotion.Id, Arg.Any<CancellationToken>()).Returns(promotion);
-        _repository.ExistsInProgressAsync(PromotionFactory.DefaultAppId,
-                                          PromotionFactory.DefaultEnvironment,
-                                          Arg.Any<CancellationToken>()).Returns(false);
 
         var command = new ApprovePromotionCommand
         {
@@ -75,40 +72,11 @@ public class ApprovePromotionCommandHandlerTests
     }
 
     [Fact]
-    public async Task Should_ReturnConflictError_When_EnvironmentIsLocked()
-    {
-        // Arrange
-        var promotion = PromotionFactory.Requested();
-        _repository.GetByIdAsync(promotion.Id, Arg.Any<CancellationToken>()).Returns(promotion);
-        _repository.ExistsInProgressAsync(PromotionFactory.DefaultAppId,
-                                          PromotionFactory.DefaultEnvironment,
-                                          Arg.Any<CancellationToken>()).Returns(true);
-
-        var command = new ApprovePromotionCommand
-        {
-            PromotionId =promotion.Id,
-            ApprovedBy ="bob",
-            ApproverRole = Promotion.ApproverRole
-        };
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsError.Should().BeTrue();
-        result.FirstError.Type.Should().Be(ErrorType.Conflict);
-        result.FirstError.Code.Should().Be("Promotion.SlotOccupied");
-    }
-
-    [Fact]
     public async Task Should_ReturnUnauthorizedError_When_ApproverRoleIsInvalid()
     {
         // Arrange
         var promotion = PromotionFactory.Requested();
         _repository.GetByIdAsync(promotion.Id, Arg.Any<CancellationToken>()).Returns(promotion);
-        _repository.ExistsInProgressAsync(PromotionFactory.DefaultAppId,
-                                          PromotionFactory.DefaultEnvironment,
-                                          Arg.Any<CancellationToken>()).Returns(false);
 
         var command = new ApprovePromotionCommand
         {

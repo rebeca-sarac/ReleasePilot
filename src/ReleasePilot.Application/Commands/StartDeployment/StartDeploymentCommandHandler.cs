@@ -1,5 +1,6 @@
 using ErrorOr;
 using MediatR;
+using ReleasePilot.Application.Exceptions;
 using ReleasePilot.Application.Ports;
 
 namespace ReleasePilot.Application.Commands.StartDeployment;
@@ -26,6 +27,16 @@ public class StartDeploymentCommandHandler : IRequestHandler<StartDeploymentComm
                                   description: $"Promotion '{command.PromotionId}' was not found.");
         }
 
+        // Guard: no existing InProgress promotion for the same app + environment
+        var slotOccupied = await _repository.ExistsInProgressAsync(promotion.ApplicationId,
+                                                                   promotion.TargetEnvironment,
+                                                                   cancellationToken);
+        if (slotOccupied)
+        {
+            return Error.Conflict(code: "Promotion.SlotOccupied",
+                                  description: "An InProgress promotion already exists for this application and environment.");
+        }
+
         var result = promotion.StartDeployment(command.StartedBy);
         if (result.IsError)
         {
@@ -38,7 +49,15 @@ public class StartDeploymentCommandHandler : IRequestHandler<StartDeploymentComm
                                                      promotion.TargetEnvironment,
                                                      cancellationToken);
 
-        await _repository.UpdateAsync(promotion, cancellationToken);
+        try
+        {
+            await _repository.UpdateAsync(promotion, cancellationToken);
+        }
+        catch (SlotOccupiedException)
+        {
+            return Error.Conflict(code: "Promotion.SlotOccupied",
+                                  description: "An InProgress promotion already exists for this application and environment.");
+        }
 
         foreach (var evt in promotion.DomainEvents)
         {

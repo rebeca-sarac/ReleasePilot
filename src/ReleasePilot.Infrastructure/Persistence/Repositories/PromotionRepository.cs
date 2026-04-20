@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using ReleasePilot.Application.Exceptions;
 using ReleasePilot.Application.Ports;
 using ReleasePilot.Domain.Promotions;
 using ReleasePilot.Domain.Promotions.ValueObjects;
@@ -28,7 +30,17 @@ public class PromotionRepository : IPromotionRepository
 
     public async Task UpdateAsync(Promotion promotion, CancellationToken cancellationToken = default)
     {
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+            when (ex.InnerException is PostgresException pg
+                  && pg.SqlState == "23505"
+                  && pg.ConstraintName == "IX_Promotions_InProgress_AppId_TargetEnv")
+        {
+            throw new SlotOccupiedException();
+        }
     }
 
     public async Task<bool> ExistsInProgressAsync(ApplicationId applicationId, EnvironmentName targetEnvironment, CancellationToken cancellationToken = default)

@@ -24,17 +24,6 @@ public class ApprovePromotionCommandHandler : IRequestHandler<ApprovePromotionCo
                                   description: $"Promotion '{command.PromotionId}' was not found.");
         }
 
-        // Guard: no existing InProgress promotion for the same app + environment
-        var slotOccupied = await _repository.ExistsInProgressAsync(promotion.ApplicationId,
-                                                                   promotion.TargetEnvironment,
-                                                                   cancellationToken);
-
-        if (slotOccupied)
-        {
-            return Error.Conflict(code: "Promotion.SlotOccupied",
-                                  description: "An InProgress promotion already exists for this application and environment.");
-        }
-
         var result = promotion.Approve(command.ApprovedBy, command.ApproverRole);
         if (result.IsError)
         {
