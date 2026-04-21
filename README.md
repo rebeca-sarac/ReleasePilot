@@ -265,6 +265,9 @@ Decoupling the audit consumer from the API means neither affects the other's ava
 
 Recording `PromotionStateHistory` inside a command handler would couple the write path to audit concerns and create implicit side effects. By deriving history from published domain events in the Worker, the record is always consistent with what actually happened at the broker level, and the consumer can replay or rebuild history independently.
 
+**Concurrency-safe InProgress constraint**
+The one-active-promotion-per-environment rule is enforced at two levels. The application layer checks for an existing InProgress promotion before approving, and a unique partial index at the database level makes it physically impossible for two promotions to reach InProgress simultaneously under concurrent load. This means the invariant holds regardless of race conditions between concurrent requests.
+
 ---
 
 ## 9. What I Would Do Next
